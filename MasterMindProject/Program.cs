@@ -1,7 +1,6 @@
 ﻿//Simple mastermind game by -Josh Tempesta 2019
 
 using System;
-using System.Text;
 using System.Linq;
 using System.Collections.Generic;
 
@@ -9,9 +8,12 @@ namespace MasterMind
 {
     static class Program
     {
-        const int difficulty = 4;
+        //Game controls for debugging and fun
+        const int difficulty = 4; //input and answer length
         const int maxattempts = 10;
-        const bool allowDuplicates = true;
+        const bool allowDuplicates = false;
+
+        const bool debug = true;
         //
 
         static int[] answer;
@@ -24,15 +26,23 @@ namespace MasterMind
             Answer();
 
             string input = null;
+            bool correct;
             do
             {
-                Guess(input);
+                correct = Guess(input);
 
-            } while (attempt < maxattempts);
+            } while (attempt <= maxattempts && !correct);
+
+            if(!correct)
+            {
+                Console.WriteLine("Sorry! You LOST. Run the program to try again.\n");
+            }
+            Console.WriteLine("Press any key to exit the program.");
+            Console.ReadKey();
         }
 
         private static void Answer()
-        { //Generate the correct answer
+        { //Generates and stores a new answer 
             answer = new int[difficulty];
             for (var x = 0; x < difficulty; x++)
             {
@@ -44,7 +54,8 @@ namespace MasterMind
                 } while (r == 0 || !CheckForDuplicateAnswer(r));
                 answer[x] = r;
             }
-            Console.WriteLine("\n\nDEBUG: The secret answer is: " + string.Join(' ', answer) + "\n");
+            if (debug)
+                Console.WriteLine("\n\nDEBUG: The secret answer is: " + string.Join(' ', answer) + "\n");
         }
 
         private static bool CheckForDuplicateAnswer(int r)
@@ -63,10 +74,7 @@ namespace MasterMind
 
         private static void Help()
         {
-            Console.WriteLine("MasterMind game by Josh Tempesta");
-            Console.WriteLine("Each number in the answer is between 1 and 6");
-            Console.WriteLine("You have 10 guesses to correctly guess the answer.");
-            Console.WriteLine("Hints will be given in the form of a + for digits that are correct, a - for each digit that is correct but in the wrong position, and empty for not correct at all.");
+            Console.Write("MasterMind game by Josh Tempesta Each number in the answer is between 1 and 6.\nYou have 10 guesses to correctly guess the answer. \nHints will be given in the form of a + for digits that are correct.\nAnd a - for each digit that is correct but in the wrong position.\nAn empty hint means not correct.");
         }
 
         private static bool Guess(string input)
@@ -82,38 +90,52 @@ namespace MasterMind
 
             string hint = Hint(input);
 
-            Console.WriteLine("Wrong. Your hint: "+hint);
-
-            attempt++;
-
-            return true;
+            if (hint == null)
+            {
+                Console.WriteLine("CORRECT! YOU WIN! Woot :)");
+                return true;
+            }
+            else
+            {
+                Console.WriteLine("Wrong. Your hint: " + hint);
+                attempt++;
+                return false;
+            }            
         }
 
         private static string Hint(string input)
         { //Retrieves the hint given the validated user's input
-            string joinedanswer = string.Join("", answer);           
+            string joinedanswer = string.Join("", answer); //TODO: might be a better way to do this
             char[] distinctInput = input.Distinct().ToArray();
 
-            int totallyCorrect = 0, positionCorrect = 0;
-            for (int x = 0; x < distinctInput.Length; x++)
+            var totallyCorrect = new List<char>();
+            var positionCorrect = new List<char>();
+
+            for (int x = 0; x < difficulty; x++)
             {
                 if (joinedanswer[x] == input[x])
                 {
-                    totallyCorrect++;
+                    totallyCorrect.Add(input[x]);
                 }
-                else if (joinedanswer.Contains(distinctInput[x]))
+            }
+            for (int x = 0; x < difficulty; x++)
+            {
+                if (joinedanswer.Contains(input[x]) && !totallyCorrect.Contains(input[x]))
                 {
-                    positionCorrect++;
+                    positionCorrect.Add(input[x]);
                 }
             }
 
             string h = "";
-            for (var x = 0; x < totallyCorrect; x++)
+            for (var x = 0; x < totallyCorrect.Count; x++)
                 h += "+";
-            for (var x = 0; x < positionCorrect; x++)
+            for (var x = 0; x < positionCorrect.Count; x++)
                 h += "-";
 
-            return h;
+            if(totallyCorrect.Count == answer.Length)
+                return null; //no hint because this one is correct
+            else
+                return h; //receive a hint
         }
 
         private static bool ValidateInput(string input)
